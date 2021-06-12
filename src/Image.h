@@ -5,8 +5,10 @@
 #ifndef IMAGEPROCESSINGLIBRARY_IMAGE_H
 #define IMAGEPROCESSINGLIBRARY_IMAGE_H
 
-#include <stdint.h>
+#include <cstdint>
 #include <cstdio>
+
+#include "Pixel.h"
 
 enum ImageType {
     PNG, JPG, BMP, TGA
@@ -16,9 +18,14 @@ class Image {
 private:
     uint8_t *data = nullptr;
     size_t size = 0;
+    size_t pixels;
     int width;
     int height;
     int channels;
+
+    size_t get_pixel_data_pointer_offset(size_t pixel_index) const;
+
+    size_t get_pixel_data_pointer_offset_xy(size_t pixel_index_x, size_t pixel_index_y) const;
 
 public:
     explicit Image(const char *filename);
@@ -26,6 +33,8 @@ public:
     Image(int width, int height, int channels);
 
     Image(const Image &img);
+
+    size_t get_pixels() const;
 
     ~Image();
 
@@ -58,6 +67,14 @@ public:
     void set_channels(int channels);
 
     uint8_t *get_data() const;
+
+    Pixel *get_pixel(size_t pixel_index) const;
+
+    Pixel *get_pixel(size_t pixel_index_x, size_t pixel_index_y) const;
+
+    bool set_pixel(size_t pixel_index, const Pixel &pixel, bool force_min_channels);
+
+    bool set_pixel(size_t pixel_index_x, size_t pixel_index_y, const Pixel &pixel, bool force_min_channels);
 };
 
 
