@@ -6,8 +6,11 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 
 #include "Image.h"
-#include "include/stb_image.h"
-#include "include/stb_image_write.h"
+#include "../include/stb_image.h"
+#include "../include/stb_image_write.h"
+
+#include <exception>
+#include <stdexcept>
 
 Image::Image(const char *filename) {
     if (Image::open(filename)) {
@@ -15,12 +18,14 @@ Image::Image(const char *filename) {
     } else {
         printf("Failed to read %s", filename);
     }
-    Image::size = Image::height * Image::width * Image::channels;
+    Image::pixels = Image::height * Image::width;
+    Image::size = Image::pixels * Image::channels;
 }
 
 Image::Image(int width, int height, int channels)
         : width{width}, height{height}, channels{channels} {
-    Image::size = width * height * channels;
+    Image::pixels = width * height;
+    Image::size = Image::pixels * channels;
     Image::data = new uint8_t[size];
 }
 
@@ -128,4 +133,59 @@ void Image::set_channels(int channels) {
 
 uint8_t *Image::get_data() const {
     return data;
+}
+
+size_t Image::get_pixel_data_pointer_offset(size_t pixel_index) const {
+    if (pixel_index > Image::pixels) {
+        throw std::out_of_range("Image :: get_pixel_data_pointer_offset() : index is out of range");
+    }
+    size_t data_pointer_offset = pixel_index * Image::channels;
+    return data_pointer_offset;
+}
+
+size_t Image::get_pixel_data_pointer_offset_xy(size_t pixel_index_x, size_t pixel_index_y) const {
+    size_t pixel_index = pixel_index_y * Image::width + pixel_index_x;
+    return Image::get_pixel_data_pointer_offset(pixel_index);
+}
+
+Pixel *Image::get_pixel(size_t pixel_index) const {
+    size_t data_pointer_offset = Image::get_pixel_data_pointer_offset(pixel_index);
+    return new Pixel(Image::get_data() + data_pointer_offset, Image::channels);
+}
+
+Pixel *Image::get_pixel(size_t pixel_index_x, size_t pixel_index_y) const {
+    size_t pixel_index = pixel_index_y * Image::width + pixel_index_x;
+    return Image::get_pixel(pixel_index);
+}
+
+bool Image::set_pixel(size_t pixel_index, const Pixel &pixel, bool force_min_channels = false) {
+    if (pixel_index > Image::pixels) {
+        throw std::out_of_range("Image :: set_pixel() : index is out of range");
+    }
+    if ((!force_min_channels) and pixel.get_channels() != Image::channels) {
+        throw std::range_error("Image :: set_pixel() : Pixel and Image channels doesn't match");
+    }
+    uint16_t channel = Image::channels;
+    if (force_min_channels) { channel = std::min(channel, pixel.get_channels()); }
+    size_t data_pointer_offset = Image::get_pixel_data_pointer_offset(pixel_index);
+    switch (channel) {
+        case 4:
+            *(Image::get_data() + data_pointer_offset + 3) = pixel.get_alpha();
+        case 3:
+            *(Image::get_data() + data_pointer_offset + 2) = pixel.get_blue();
+        case 2:
+            *(Image::get_data() + data_pointer_offset + 1) = pixel.get_green();
+        case 1:
+            *(Image::get_data() + data_pointer_offset + 0) = pixel.get_red();
+    }
+
+}
+
+bool Image::set_pixel(size_t pixel_index_x, size_t pixel_index_y, const Pixel &pixel, bool force_min_channels = false) {
+    size_t pixel_index = Image::get_pixel_data_pointer_offset_xy(pixel_index_x, pixel_index_y);
+    Image::set_pixel(pixel_index, pixel, force_min_channels);
+}
+
+size_t Image::get_pixels() const {
+    return Image::pixels;
 }
