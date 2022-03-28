@@ -1,2 +1,2 @@
 # ImageProcessingLibrary
-//Project stalled
+Working on the project, might provide documentation later.
