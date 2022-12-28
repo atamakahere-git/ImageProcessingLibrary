@@ -6,8 +6,8 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 
 #include "Image.h"
-#include "../include/stb_image.h"
-#include "../include/stb_image_write.h"
+#include "../stb/stb_image.h"
+#include "../stb/stb_image_write.h"
 
 #include <exception>
 #include <stdexcept>
